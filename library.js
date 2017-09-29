@@ -168,6 +168,11 @@
         callback(null, strategies);
     };
 
+    plugin.sanatizeUserName = function(username) {
+      // replacing any invalid chars that came back from the sso username with _ (most likely an @)
+      return username.replace(/[^'"\s\-+.*0-9\u00BF-\u1FFF\u2C00-\uD7FF\w]/g, "_");
+    }
+
     plugin.parseUserReturn = function (userData, callback) {
         var profile = {};
         for (var key in plugin.tokenMapper) {
@@ -175,8 +180,12 @@
                 profile[key] = userData[plugin.tokenMapper[key]];
             }
         }
+
+        profile.username = plugin.sanatizeUserName(profile.username);
         callback(null, profile);
     };
+
+
 
     plugin.login = function (payload, callback) {
         plugin.getUidByOAuthid(payload.id, function (err, uid) {
@@ -187,43 +196,51 @@
 
             if (uid !== null) {
                 async.parallel([
-                    function (callback) {
-                        if (payload.isAdmin) {
-                            Groups.join('administrators', uid, function (err) {
-                                if (err) {
-                                    callback(err);
-                                }
-                                callback(null, {
-                                    uid: uid
-                                });
-                            });
-                        } else {
-                            Groups.leave('administrators', uid, function (err) {
-                                if (err) {
-                                    callback(err);
-                                }
-                                callback(null);
-                            });
-                        }
-                    },
-                    function (callback) {
-                        User.getUserField(uid, 'username', function (err, oldUsername) {
-                            if (err) {
-                                return callback(err);
-                            }
-                            if (oldUsername === payload.username) {
-                                return callback(null, 'Username not changed');
-                            }
-                            User.updateProfile(uid, {
-                                username: payload.username
-                            }, function (err, userData) {
-                                if (err) {
-                                    return callback(err);
-                                }
-                                return callback(null, userData);
-                            });
-                        });
-                    }
+
+                    // commenting this out as administrators is managed via nodebb admin
+
+                    // function (callback) {
+                    //     if (payload.isAdmin) {
+                    //         Groups.join('administrators', uid, function (err) {
+                    //             if (err) {
+                    //                 callback(err);
+                    //             }
+                    //             callback(null, {
+                    //                 uid: uid
+                    //             });
+                    //         });
+                    //     } else {
+                    //         Groups.leave('administrators', uid, function (err) {
+                    //             if (err) {
+                    //                 callback(err);
+                    //             }
+                    //             callback(null);
+                    //         });
+                    //     }
+                    // },
+
+
+                    // commenting this out because i don't want sso username to override nodeBB
+
+                    // function (callback) {
+                    //     User.getUserField(uid, 'username', function (err, oldUsername) {
+                    //         console.log('old username be,...', oldUsername )
+                    //         if (err) {
+                    //             return callback(err);
+                    //         }
+                    //         if (oldUsername === payload.username) {
+                    //             return callback(null, 'Username not changed');
+                    //         }
+                    //         User.updateProfile(uid, {
+                    //             username: payload.username
+                    //         }, function (err, userData) {
+                    //             if (err) {
+                    //                 return callback(err);
+                    //             }
+                    //             return callback(null, userData);
+                    //         });
+                    //     });
+                    // }
                 ], function (err, result) {
                     if (err) {
                         return winston.error(err);
@@ -273,6 +290,7 @@
             }
         });
     };
+
 
     plugin.getUidByOAuthid = function (keycloakId, callback) {
         db.getObjectField(plugin.name + 'Id:uid', keycloakId, function (err, uid) {
