@@ -139,7 +139,7 @@
                 callbackURL: plugin.settings['callback-url'],
                 keycloakConfig: plugin.keycloakConfig,
                 validRedirectsHosts: plugin.validRedirects
-            }, function (userData, req, done) {
+            }, function (accessToken, refreshToken, userData, done) {
                 plugin.parseUserReturn(userData, function (err, profile) {
                     if (err) {
                         return done(err);
@@ -195,59 +195,7 @@
             }
 
             if (uid !== null) {
-                async.parallel([
-
-                    // commenting this out as administrators is managed via nodebb admin
-
-                    // function (callback) {
-                    //     if (payload.isAdmin) {
-                    //         Groups.join('administrators', uid, function (err) {
-                    //             if (err) {
-                    //                 callback(err);
-                    //             }
-                    //             callback(null, {
-                    //                 uid: uid
-                    //             });
-                    //         });
-                    //     } else {
-                    //         Groups.leave('administrators', uid, function (err) {
-                    //             if (err) {
-                    //                 callback(err);
-                    //             }
-                    //             callback(null);
-                    //         });
-                    //     }
-                    // },
-
-
-                    // commenting this out because i don't want sso username to override nodeBB
-
-                    // function (callback) {
-                    //     User.getUserField(uid, 'username', function (err, oldUsername) {
-                    //         console.log('old username be,...', oldUsername )
-                    //         if (err) {
-                    //             return callback(err);
-                    //         }
-                    //         if (oldUsername === payload.username) {
-                    //             return callback(null, 'Username not changed');
-                    //         }
-                    //         User.updateProfile(uid, {
-                    //             username: payload.username
-                    //         }, function (err, userData) {
-                    //             if (err) {
-                    //                 return callback(err);
-                    //             }
-                    //             return callback(null, userData);
-                    //         });
-                    //     });
-                    // }
-                ], function (err, result) {
-                    if (err) {
-                        return winston.error(err);
-                    }
-                    callback(null, { uid: uid });
-                });
-
+                callback(null, { uid: uid });
             } else {
                 // New User
                 var success = function (uid) {
